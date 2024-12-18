@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Aggregator With Sentiment Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            padding-top: 70px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .navbar {
+            background-color: #007bff;
+        }
+
+        .navbar-brand, .nav-link {
+            color: white;
+        }
+
+        .navbar-brand:hover, .nav-link:hover {
+            color: #ffc107;
+        }
+
+        .card {
+            margin-bottom: 20px;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            border-bottom: 3px solid #0056b3;
+        }
+
+        .card-body {
+            background-color: #ffffff;
+            padding: 20px;
+        }
+
+        .card-footer {
+            background-color: #f7f7f7;
+            border-top: 1px solid #e3e6f0;
+        }
+
+        .dropdown-container {
+            margin-bottom: 20px;
+        }
+
+        .filter-btns {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .time-ago {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .badge {
+            text-transform: capitalize;
+        }
+
+        .badge-positive {
+            background-color: #28a745;
+        }
+
+        .badge-negative {
+            background-color: #dc3545;
+        }
+
+        .badge-neutral {
+            background-color: #17a2b8;
+        }
+
+        .container {
+            max-width: 1200px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #007bff;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .select-dropdown {
+            border: 2px solid #007bff;
+            border-radius: 5px;
+        }
+
+        .select-dropdown:focus {
+            border-color: #0056b3;
+        }
+
+        /* Dark mode styles */
+        .dark-mode {
+            background-color: #343a40;
+            color: white;
+        }
+
+        .dark-mode .card {
+            background-color: #495057;
+            color: white;
+        }
+
+        .dark-mode .card-header {
+            background-color: #007bff;
+        }
+
+        .dark-mode .card-body {
+            background-color: #495057;
+        }
+
+        .dark-mode .card-footer {
+            background-color: #212529;
+        }
+
+        .dark-mode .navbar {
+            background-color: #1c1e22;
+        }
+
+        .dark-mode .navbar-brand, .dark-mode .nav-link {
+            color: white;
+        }
+
+        .dark-mode .navbar-brand:hover, .dark-mode .nav-link:hover {
+            color: #ffc107;
+        }
+
+        .dark-mode .badge-positive {
+            background-color: #28a745;
+        }
+
+        .dark-mode .badge-negative {
+            background-color: #dc3545;
+        }
+
+        .dark-mode .badge-neutral {
+            background-color: #17a2b8;
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+    <div class="container">
+        <button class="btn btn-outline-light" id="toggle-mode">
+            <i class="fas fa-moon"></i> Dark Mode
+        </button>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- Title centered on top -->
+    <h1 class="my-4">News Aggregator With Sentiment Analysis</h1>
+
+    <!-- Category & Sentiment Filters -->
+    <div class="dropdown-container">
+        <form method="POST" action="/">
+            <div class="row">
+                <div class="col-12 col-md-6">
+                    <select class="form-select select-dropdown" name="category" onchange="this.form.submit()">
+                        <option value="world" {% if category == 'world' %}selected{% endif %}>World News</option>
+                        <option value="politics" {% if category == 'politics' %}selected{% endif %}>Politics</option>
+                        <option value="entertainment" {% if category == 'entertainment' %}selected{% endif %}>Entertainment</option>
+                        <option value="sports" {% if category == 'sports' %}selected{% endif %}>Sports</option>
+                        <option value="technology" {% if category == 'technology' %}selected{% endif %}>Technology</option>
+                        <option value="fashion" {% if category == 'fashion' %}selected{% endif %}>Fashion</option>
+                        <option value="stories" {% if category == 'stories' %}selected{% endif %}>Stories</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-6">
+                    <select class="form-select select-dropdown" name="sentiment" onchange="this.form.submit()">
+                        <option value="all" {% if sentiment == 'all' %}selected{% endif %}>All Sentiments</option>
+                        <option value="Positive" {% if sentiment == 'Positive' %}selected{% endif %}>Positive</option>
+                        <option value="Negative" {% if sentiment == 'Negative' %}selected{% endif %}>Negative</option>
+                        <option value="Neutral" {% if sentiment == 'Neutral' %}selected{% endif %}>Neutral</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- News Cards -->
+    <div class="row">
+        {% for news in news %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">{{ news.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ news.summary }}</p>
+                    <a href="{{ news.link }}" class="btn btn-primary" target="_blank">Read More</a>
+                    <p class="time-ago">{{ news.published }} | Sentiment: <span class="badge {% if news.sentiment == 'Positive' %}badge-positive{% elif news.sentiment == 'Negative' %}badge-negative{% else %}badge-neutral{% endif %}">{{ news.sentiment }}</span></p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Toggle dark mode and light mode
+    const toggleButton = document.getElementById('toggle-mode');
+    const body = document.body;
+    const currentMode = localStorage.getItem('mode');
+
+    if (currentMode === 'dark') {
+        body.classList.add('dark-mode');
+        toggleButton.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+    }
+
+    toggleButton.addEventListener('click', function() {
+        if (body.classList.contains('dark-mode')) {
+            body.classList.remove('dark-mode');
+            localStorage.setItem('mode', 'light');
+            toggleButton.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
+        } else {
+            body.classList.add('dark-mode');
+            localStorage.setItem('mode', 'dark');
+            toggleButton.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -3,9 +3,9 @@ import feedparser
 from datetime import datetime
 from nltk import download
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from nltk.tokenize import sent_tokenize
+from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
 
-# Download necessary NLTK data files
+# Download necessary NLTK resources
 download('vader_lexicon')
 download('punkt')
 
@@ -14,6 +14,10 @@ app = Flask(__name__)
 
 # Initialize sentiment analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
+
+# Initialize Punkt tokenizer manually to avoid punkt_tab issue
+punkt_param = PunktParameters()
+tokenizer = PunktSentenceTokenizer(punkt_param)
 
 # RSS Feeds for various categories
 RSS_FEEDS = {
@@ -29,21 +33,19 @@ RSS_FEEDS = {
 # Helper function to fetch and parse RSS feeds with pagination
 def fetch_news(category, page=1, per_page=50):
     feed = feedparser.parse(RSS_FEEDS[category])
-    news_items = feed.entries  # Get all items from the RSS feed
-    # Sort news by published date in descending order (latest first)
+    news_items = feed.entries
     news_items.sort(key=lambda x: x.get("published_parsed"), reverse=True)
-    
-    # Paginate the news items
+
     start_index = (page - 1) * per_page
     end_index = start_index + per_page
-    return news_items[start_index:end_index], len(news_items)  # Return news items for this page and total count
+    return news_items[start_index:end_index], len(news_items)
 
-# Helper function to summarize news content
+# Summarize content using custom Punkt tokenizer
 def summarize_content(content, summary_length=3):
-    sentences = sent_tokenize(content)
+    sentences = tokenizer.tokenize(content)
     return ' '.join(sentences[:summary_length])
 
-# Helper function to determine the sentiment of the news
+# Sentiment analysis helper
 def analyze_sentiment(content):
     score = sentiment_analyzer.polarity_scores(content)
     if score["compound"] >= 0.05:
@@ -53,20 +55,18 @@ def analyze_sentiment(content):
     else:
         return "Neutral"
 
-# Route for the homepage with pagination
+# Homepage route with pagination and sentiment filter
 @app.route("/", methods=["GET", "POST"])
 def index():
     selected_category = request.form.get("category", "world")
     selected_sentiment = request.form.get("sentiment", "all")
-    current_page = int(request.args.get("page", 1))  # Default to page 1 if not specified
+    current_page = int(request.args.get("page", 1))
 
-    # Fetch and sort news based on category and page
     news_items, total_items = fetch_news(selected_category, current_page)
-    total_pages = (total_items // 50) + (1 if total_items % 50 != 0 else 0)  # Calculate total pages
+    total_pages = (total_items // 50) + (1 if total_items % 50 != 0 else 0)
 
     formatted_news = []
 
-    # Format news items with summary, publication date, and sentiment
     for item in news_items:
         summary = summarize_content(item.description)
         published_time = datetime(*item.published_parsed[:6]).strftime("%Y-%m-%d %H:%M:%S") if item.published_parsed else "Unknown"
@@ -80,11 +80,19 @@ def index():
             "sentiment": sentiment
         })
 
-    # Filter news items based on selected sentiment, if applicable
     if selected_sentiment != "all":
         formatted_news = [item for item in formatted_news if item["sentiment"] == selected_sentiment]
 
-    return render_template("index.html", news=formatted_news, categories=RSS_FEEDS.keys(), category=selected_category, sentiment=selected_sentiment, current_page=current_page, total_pages=total_pages)
+    return render_template(
+        "index.html",
+        news=formatted_news,
+        categories=RSS_FEEDS.keys(),
+        category=selected_category,
+        sentiment=selected_sentiment,
+        current_page=current_page,
+        total_pages=total_pages
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)
+
